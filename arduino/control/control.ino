@@ -1,27 +1,15 @@
 /*
-  HG7881_Motor_Driver_Example - Arduino sketch
+  4-motors/sensors/grip robot AKA "Rocky" - Arduino sketch
+  See https://github.com/bandaangosta/rocky  
 
-  This example shows how to drive a motor with using HG7881 (L9110) Dual
-  Channel Motor Driver Module.  For simplicity, this example shows how to
-  drive a single motor.  Both channels work the same way.
-
-  This example is meant to illustrate how to operate the motor driver
-  and is not intended to be elegant, efficient or useful.
+  Description:
+    PENDING           	
 
   Connections:
+    PENDING
 
-    Arduino digital output D10 to motor driver input B-IA.
-    Arduino digital output D11 to motor driver input B-IB.
-    Motor driver VCC to operating voltage 5V.
-    Motor driver GND to common ground.
-    Motor driver MOTOR B screw terminals to a small motor.
-
-  Related Banana Robotics items:
-
-    BR010038 HG7881 (L9110) Dual Channel Motor Driver Module
-    https://www.BananaRobotics.com/shop/HG7881-(L9110)-Dual-Channel-Motor-Driver-Module
-
-  https://www.BananaRobotics.com
+  Notes:
+    DC motors driving based on: https://www.BananaRobotics.com/shop/HG7881-(L9110)-Dual-Channel-Motor-Driver-Module
 */
 
 #include <Servo.h>
@@ -64,10 +52,10 @@
 #define BUMPER_REAR3  A3
 
 #define GRIP 9 // pin for grip servo motor
-#define MIN_SERVO_GRIP_ANGLE 74
-#define MAX_SERVO_GRIP_ANGLE 130
-#define SERVO_GRIP_ANGLE_CLOSE 80
-#define SERVO_GRIP_ANGLE_OPEN 120
+#define MIN_SERVO_GRIP_ANGLE 74   // determined empirically
+#define MAX_SERVO_GRIP_ANGLE 130  // determined empirically
+#define SERVO_GRIP_ANGLE_CLOSE 80 // determined empirically
+#define SERVO_GRIP_ANGLE_OPEN 120 // determined empirically
 
 #define ULTRASONIC_POLLING_TIME 200 // milliseconds between ultrasonic sensor distance calculation
 #define ULTRASONIC_BUMPER_DISTANCE_CM 5
