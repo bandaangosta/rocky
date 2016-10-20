@@ -1,0 +1,232 @@
+<html>
+<head>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="stylesheet" href="css/style.css" />
+	<link rel="stylesheet" media="screen and (min-device-width: 1440px)" href="css/desktop.css" />
+	<link rel='stylesheet' media='screen and (min-width: 800px) and (max-width: 1440px)' href='css/medium-style.css' />
+	<link rel='stylesheet' media='screen and (min-width: 100px) and (max-width: 799px)' href='css/mobile-style.css' />
+
+	<title> Robot control w/joystick </title>
+
+</head>
+<body onload="startup()">
+	<div id="wrapper">
+
+		<div id="container" class="box_left" style="min-height:300px; max-height:200px;">
+			<div id="messages">&nbsp;</div>
+			<div id="result"></div>
+			<!-- <div id="distance"></div> -->
+		</div>
+		<div id="streaming" class="box_left" style="min-height:300px; max-height:200px; text-align: center; vertical-align: middle;">
+			<!-- <img src="http://10.195.17.58:8080/stream/video.h264" alt="image" width="200"> -->
+			<img id="rpi_stream" src="img/camera_256.png" alt="rpi_cam" height="100%">
+		</div>
+		<!-- <div id="buttons" style="min-width:300px; margin-left:400px"> -->
+		<div id="buttons" class="box_right">
+			<table border="0" style="margin-left: auto; margin-right: 0; ">
+				<tr>
+					<td>
+						<input type="image" id="img_lucas" src="img/lucas.jpg" width="128">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<input type="image" id="img_car" src="img/old_car.png" width="128">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<input type="image" id="img_dog" src="img/dog-icon.png" width="128">
+					</td>
+				</tr>
+			</table>
+
+		</div>
+	</div>
+	<div id="distance" style="font-weight: bold; font-size: large;"></div>
+	<br>
+	<div><input type="text" id="voice_message" size="30" value="hola!"><button onclick="sendVoiceMessage()">Say</button></div>
+	<br>
+	<button onclick="ws.close()">Close socket</button>
+	<button id="btnCamera" onclick="toggleCamera()">Start camera</button>
+	<button onclick="toggleBumpers()">Toggle bumpers</button>
+	<button id="btnGrip" onclick="toggleGrip()">Close grip</button>
+	<br>
+	Log:
+	<pre id="log" style="border: 1px solid #ccc; max-height:100px; overflow-y:scroll;"></pre>
+
+	<script src="js/virtualjoystick.js"></script>
+	<script>
+		// Web socket handler
+		var ws;
+
+		var nextSound = 0;
+		var refreshIntervalId;
+		var cameraSrc = document.getElementById("rpi_stream").src;
+
+		// -----------------------------
+		// Open a websocket with robot onboard server to send and receive commands
+		function WebSocketOpen()
+		{
+			ws = new WebSocket("ws://" + location.host + ":9998/joystick_serial");
+			// ws = new WebSocket("ws://10.195.17.58:9998/joystick_serial");
+			// ws = new WebSocket("ws://192.168.1.182:9998/joystick_reader");
+			// ws = new WebSocket("ws://192.168.1.155:9998/joystick_reader");
+			// ws = new WebSocket("ws://192.168.1.176:9998/joystick_reader");
+			// ws = new WebSocket("ws://172.24.1.1:9998/joystick_reader");
+			ws.onopen = function()
+			{
+				document.getElementById('messages').innerHTML = "Socket open (rpi3)";
+			};
+
+			ws.onmessage = function (evt)
+			{
+				var received_msg = evt.data;
+				var outputEl   = document.getElementById('distance');
+				var splitted;
+				// document.getElementById('messages').innerHTML = received_msg;
+				log(received_msg);
+
+				if(received_msg.substr(0, 1) == '$')
+				{
+					splitted = received_msg.split(";")
+					outputEl.innerHTML	= '<b>Distance [cms]: </b> ' + splitted[0].split('$')[1];
+				}
+			};
+
+			ws.onclose = function()
+			{
+			  // websocket is closed.
+			  document.getElementById('messages').innerHTML = "Connection is closed";
+			  clearInterval(refreshIntervalId);
+			};
+		}
+
+		function startup()
+		{
+			// Open a websocket with robot onboard server to send and receive commands
+			WebSocketOpen();
+
+			/* Handle "touch" (tablet or phone) and "click" (mouse) events on icons */
+
+			//  // Simplest way, but wordier
+			// document.getElementById("img_lucas").addEventListener("touchstart", function(evt){sendCommand(evt, "L", "Lucas")}, false);
+			// document.getElementById("img_lucas").addEventListener("mousedown", function(evt){sendCommand(evt, "L", "Lucas")}, false);
+
+			['touchstart', 'mousedown'].forEach(function(e){
+				document.getElementById("img_lucas").addEventListener(e, function(evt){sendCommand(evt, "L", "Lucas", this)}, false);
+				document.getElementById("img_dog").addEventListener(e, function(evt){sendCommand(evt, "d", "Dog", this)}, false);
+				document.getElementById("img_car").addEventListener(e, function(evt){sendCommand(evt, "h", "Honk", this)}, false);
+			});
+
+			['touchend', 'mouseup'].forEach(function(e){
+				document.getElementById("img_lucas").addEventListener(e, function(){this.style.border=""}, false);
+				document.getElementById("img_dog").addEventListener(e, function(){this.style.border=""}, false);
+				document.getElementById("img_car").addEventListener(e, function(){this.style.border=""}, false);
+			});
+
+		}
+
+		function sendCommand(event, command, message, element)
+		{
+			event.preventDefault();
+			log("message " + message);
+			nextSound = command;
+			// ws.send(command);
+			// document.getElementById("img_lucas").style.border = "thick solid #0000FF";
+			element.style.border = "2px solid #FF5500";
+		}
+
+		function toggleBumpers()
+		{
+			nextSound = 't';
+		}
+
+		function toggleCamera()
+		{
+			camContainer = document.getElementById("rpi_stream");
+
+			if(camContainer.src == cameraSrc)
+			{
+				camContainer.src = "http://" + location.host + ":8080/stream/video.mjpeg";
+				camContainer.style.height = "100%";
+				document.getElementById("btnCamera").innerHTML = "Stop camera";
+			}
+			else
+			{
+				camContainer.src = cameraSrc;
+				camContainer.style.height = "";
+				document.getElementById("btnCamera").innerHTML = "Start camera";
+			}
+		}
+
+	// -----------------------------
+	function log(msg)
+	{
+		var p = document.getElementById('log');
+		p.innerHTML = msg + "\n" + p.innerHTML;
+	}
+
+	// -----------------------------
+	function sendVoiceMessage()
+	{
+		var message = document.getElementById('voice_message');
+		nextSound = '$' + message.value;
+	}
+
+
+	// -----------------------------
+	function toggleGrip()
+	{
+		el = document.getElementById("btnGrip")
+		if(el.innerHTML == "Close grip")
+		{
+			nextSound = '$close_grip';
+			el.innerHTML = "Open grip"
+		}
+		else
+		{
+			nextSound = '$open_grip';
+			el.innerHTML = "Close grip"
+		}
+	}
+
+	// -----------------------------
+	// Create touchscreen virtual joystick
+	var joystick = new VirtualJoystick({
+		mouseSupport	: true,
+		// stationaryBase	: true,
+		// baseX		: 200,
+		// baseY		: 200,
+		limitStickTravel: true,
+		stickRadius: 150,
+		container	: document.getElementById('container'),
+	});
+
+	// Every X milliseconds send current joystick position and queued commands
+	refreshIntervalId = setInterval(function(){
+		var outputEl   = document.getElementById('result');
+
+		// outputEl.innerHTML	= '<b>Result:</b> '
+		// + ' dx:'+joystick.deltaX()
+		// + ' dy:'+joystick.deltaY()
+		// + (joystick.right()	? ' right'	: '')
+		// + (joystick.up()	? ' up'		: '')
+		// + (joystick.left()	? ' left'	: '')
+		// + (joystick.down()	? ' down' 	: '');
+
+		var dX = Math.round(joystick.deltaX());
+		var dY = Math.round(joystick.deltaY()) * -1; // invert y-axis
+		// ws.send(joystick.deltaX() + ';' + joystick.deltaY());
+
+		outputEl.innerHTML	= '<b>Position:</b> '
+		+ ' dx:' + dX
+		+ ' dy:' + dY;
+		ws.send(dX + ';' + dY + ';' + nextSound);
+		nextSound = 0;
+	}, 0.2 * 1000);
+</script>
+</body>
+</html>

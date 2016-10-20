@@ -1,0 +1,36 @@
+body {
+	background: #C3C3C3;
+	margin: 0;
+	padding: 0;
+}
+
+input[type="image"]
+{
+	border: 2px solid #FFFFFF;
+}
+
+#header-content {
+	margin: 0%;
+	padding: 2%;
+	background-color: #dddddd;
+	height: 50px;
+}
+#main-content {
+	margin: 0% auto;
+	padding: 2%;
+	background-color: #eeeeee;
+}
+#inner-content {
+	height: auto
+}
+#footer-content {
+	clear: both;
+	margin: 0%;
+	padding: 2%;
+	background-color: #dddddd;
+	height: 70px
+}
+h2 {
+	margin: 0% 0% 2% 0%;
+	padding: 0%
+}
